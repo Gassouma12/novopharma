@@ -234,7 +234,8 @@
     "@pointsPendingApproval": {
         "placeholders": {
             "points": {
-                "type": "int"
+                "type": "double",
+                "format": "decimalPattern"
             }
         }
     },
@@ -268,5 +269,37 @@
         }
     },
     "nationalPodium": "Le podium national",
-    "myNationalPosition": "Ma position sur le classement national"
+    "myNationalPosition": "Ma position sur le classement national",
+    "badgeEarned": "Badge gagné !",
+    "awardedOn": "Attribué le {date}",
+    "@awardedOn": {
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "progress": "Progression",
+    "badgesLeft": "Badges restants",
+    "target": "Cible",
+    "eventPeriod": "Période de l'événement",
+    "to": "à",
+    "metric": "Métrique",
+    "scope": "Portée",
+    "brands": "Marques",
+    "categories": "Catégories",
+    "products": "Produits",
+    "specificProducts": "{count} produits spécifiques",
+    "@specificProducts": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "loyaltyPoints": "Points de fidélité",
+    "totalRevenue": "Revenu total",
+    "quantitySold": "Quantité vendue",
+    "noBadgesAvailable": "Aucun badge disponible.",
+    "noBadgesInCategory": "Aucun badge dans cette catégorie pour le moment."
 }

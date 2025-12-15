@@ -11,7 +11,11 @@ class SaleService {
     final saleRef = _firestore.collection(_collection).doc();
 
     final saleData = sale.toFirestore();
-    log('Attempting to create sale with data: $saleData');
+    log('[SaleService] Attempting to create sale with data: $saleData');
+    log('[SaleService] Sale will be created at: sales/${saleRef.id}');
+    log(
+      '[SaleService] Product ID: ${sale.productId}, Quantity: ${sale.quantity}, Points: ${sale.pointsEarned}',
+    );
 
     await _firestore
         .runTransaction((transaction) async {
@@ -24,10 +28,13 @@ class SaleService {
           });
         })
         .catchError((error) {
-          log('Error in createSale transaction: $error');
+          log('[SaleService] Error in createSale transaction: $error');
           // Rethrow the error to be caught by the provider
           throw error;
         });
+
+    log('[SaleService] ✅ Sale created successfully at: sales/${saleRef.id}');
+    log('[SaleService] Waiting for Cloud Function to process goal progress...');
   }
 
   Future<void> updateSale(Sale oldSale, Sale newSale) async {

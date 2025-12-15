@@ -1,69 +1,311 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:novopharma/controllers/badge_provider.dart';
+import 'package:novopharma/models/badge.dart' as models;
 import 'package:novopharma/widgets/badge_card.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:novopharma/generated/l10n/app_localizations.dart';
 
 class BadgesScreen extends StatelessWidget {
   const BadgesScreen({super.key});
 
   void _showBadgeDetails(BuildContext context, BadgeDisplayInfo badgeInfo) {
+    final l10n = AppLocalizations.of(context)!;
+    final models.Badge badge = badgeInfo.badge;
+    final models.AcquisitionRules? rules = badge.acquisitionRules;
+
+    // Calculate progress details
+    final badgesLeft = badge.maxWinners - badge.winnerCount;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.only(top: 16, bottom: 12),
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Badge Image & Title
+                          Center(
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: badgeInfo.isAwarded
+                                          ? [
+                                              const Color(0xFFF59E0B),
+                                              const Color(0xFFD97706),
+                                            ]
+                                          : [
+                                              Colors.grey.shade200,
+                                              Colors.grey.shade300,
+                                            ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (badgeInfo.isAwarded
+                                                    ? const Color(0xFFF59E0B)
+                                                    : Colors.grey)
+                                                .withValues(alpha: 0.3),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Image.network(
+                                    badge.imageUrl,
+                                    height: 80,
+                                    width: 80,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.shield_rounded,
+                                              size: 80,
+                                              color: Colors.white,
+                                            ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  badge.name,
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF1F2937),
+                                    letterSpacing: -0.5,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  badge.description,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    color: Colors.grey.shade600,
+                                    height: 1.5,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Status Badge
+                          if (badgeInfo.isAwarded)
+                            _buildAwardedStatus(badgeInfo, context)
+                          else
+                            _buildProgressStatus(badgeInfo, rules),
+
+                          const SizedBox(height: 24),
+
+                          // Badge Info Cards
+                          _buildInfoGrid(badge, rules, badgesLeft, context),
+
+                          const SizedBox(height: 24),
+
+                          // View Rules Button
+                          _buildRulesButton(context, badge, rules, l10n),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAwardedStatus(BadgeDisplayInfo badgeInfo, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 32),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.badgeEarned,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.awardedOn(
+                    DateFormat.yMMMd().format(badgeInfo.userBadge!.awardedAt),
+                  ),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressStatus(
+    BadgeDisplayInfo badgeInfo,
+    models.AcquisitionRules? rules,
+  ) {
+    if (rules == null) return const SizedBox.shrink();
+
+    final progressPercent = badgeInfo.progress * 100;
+    final currentValue = (badgeInfo.progress * rules.targetValue);
+
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.grey.shade50, Colors.white],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 60,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.progress,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1F9BD1), Color(0xFF1887B8)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${progressPercent.toStringAsFixed(0)}%',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: badgeInfo.progress,
+                  minHeight: 12,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF1F9BD1),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              Image.network(
-                badgeInfo.badge.imageUrl,
-                height: 90,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.shield_outlined,
-                  size: 90,
-                  color: Color(0xFFD1D5DB),
-                ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatValue(currentValue, rules.metric),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  Text(
+                    _formatValue(rules.targetValue, rules.metric),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                badgeInfo.badge.name,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                badgeInfo.badge.description,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
-              ),
-              const SizedBox(height: 24),
-              if (badgeInfo.isAwarded)
-                _buildInfoChip(
-                  icon: Icons.check_circle_outline,
-                  label:
-                      'Awarded on ${DateFormat.yMMMd().format(badgeInfo.userBadge!.awardedAt)}',
-                  color: Colors.green,
-                )
-              else
-                _buildProgressSection(badgeInfo.progress),
-              const SizedBox(height: 20),
             ],
           ),
         );
@@ -71,80 +313,240 @@ class BadgesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
+  String _formatValue(double value, String metric) {
+    if (metric == 'revenue') {
+      return '${value.toStringAsFixed(2)} TND';
+    } else if (metric == 'points') {
+      return '${value.toStringAsFixed(0)} pts';
+    } else {
+      return value.toStringAsFixed(0);
+    }
+  }
+
+  Widget _buildInfoGrid(
+    models.Badge badge,
+    models.AcquisitionRules? rules,
+    int badgesLeft,
+    BuildContext context,
+  ) {
+    if (rules == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final startDate = DateFormat.yMMMd().format(rules.timeframe.startDate);
+    final endDate = DateFormat.yMMMd().format(rules.timeframe.endDate);
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildInfoCard(
+                Icons.emoji_events_rounded,
+                l10n.badgesLeft,
+                '$badgesLeft',
+                const Color(0xFFF59E0B),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildInfoCard(
+                Icons.flag_rounded,
+                l10n.target,
+                _formatValue(rules.targetValue, rules.metric),
+                const Color(0xFF1F9BD1),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildDateRangeCard(startDate, endDate, context),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressSection(double progress) {
-    return Column(
-      children: [
-        Text(
-          'Your Progress',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
-          ),
+  Widget _buildDateRangeCard(
+    String startDate,
+    String endDate,
+    BuildContext context,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.purple.shade50, Colors.blue.shade50],
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 12,
-                  backgroundColor: const Color(0xFFE5E7EB),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF3B82F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.purple.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.purple.shade700,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.eventPeriod,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  '$startDate - $endDate',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.purple.shade900,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Text(
-              '${(progress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3B82F6),
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRulesButton(
+    BuildContext context,
+    models.Badge badge,
+    models.AcquisitionRules? rules,
+    AppLocalizations l10n,
+  ) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1F9BD1), Color(0xFF1887B8)],
         ),
-      ],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1F9BD1).withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+            _showBadgeRules(context, badge, rules);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.viewRules,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBadgeRules(
+    BuildContext context,
+    models.Badge badge,
+    models.AcquisitionRules? rules,
+  ) {
+    if (rules == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _BadgeRulesSheet(badge: badge, rules: rules),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My Badges',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.badges,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         elevation: 0,
@@ -159,7 +561,7 @@ class BadgesScreen extends StatelessWidget {
           }
 
           if (provider.badges.isEmpty) {
-            return const Center(child: Text('No badges available.'));
+            return Center(child: Text(l10n.noBadgesAvailable));
           }
 
           final awardedBadges = provider.badges
@@ -172,9 +574,9 @@ class BadgesScreen extends StatelessWidget {
           return CustomScrollView(
             slivers: [
               _buildSectionHeader('Awarded (${awardedBadges.length})'),
-              _buildGrid(awardedBadges),
-              _buildSectionHeader('In Progress (${lockedBadges.length})'),
-              _buildGrid(lockedBadges),
+              _buildGrid(awardedBadges, context),
+              _buildSectionHeader('Locked (${lockedBadges.length})'),
+              _buildGrid(lockedBadges, context),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
             ],
           );
@@ -199,14 +601,15 @@ class BadgesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGrid(List<BadgeDisplayInfo> badges) {
+  Widget _buildGrid(List<BadgeDisplayInfo> badges, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (badges.isEmpty) {
-      return const SliverToBoxAdapter(
+      return SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'No badges in this category yet.',
-            style: TextStyle(color: Colors.grey),
+            l10n.noBadgesInCategory,
+            style: const TextStyle(color: Colors.grey),
           ),
         ),
       );
@@ -229,5 +632,343 @@ class BadgesScreen extends StatelessWidget {
         }, childCount: badges.length),
       ),
     );
+  }
+}
+
+class _BadgeRulesSheet extends StatelessWidget {
+  final models.Badge badge;
+  final models.AcquisitionRules rules;
+
+  const _BadgeRulesSheet({required this.badge, required this.rules});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) {
+          return Column(
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1F9BD1), Color(0xFF1887B8)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.rule_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              l10n.viewRules,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1F2937),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _buildRuleSection(
+                        Icons.track_changes_rounded,
+                        l10n.metric,
+                        _getMetricText(rules.metric, l10n),
+                        const Color(0xFF1F9BD1),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildRuleSection(
+                        Icons.flag_rounded,
+                        l10n.target,
+                        _formatValue(rules.targetValue, rules.metric),
+                        const Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildScopeSection(l10n),
+                      const SizedBox(height: 16),
+                      _buildTimeframeSection(l10n),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRuleSection(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1F2937),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScopeSection(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.green.shade50, Colors.teal.shade50],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.shopping_bag_rounded,
+                color: Colors.green.shade700,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                l10n.scope,
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (rules.scope.brands.isNotEmpty) ...[
+            _buildScopeItem(l10n.brands, rules.scope.brands.join(', ')),
+            const SizedBox(height: 12),
+          ],
+          if (rules.scope.categories.isNotEmpty) ...[
+            _buildScopeItem(l10n.categories, rules.scope.categories.join(', ')),
+            const SizedBox(height: 12),
+          ],
+          if (rules.scope.productIds.isNotEmpty)
+            _buildScopeItem(
+              l10n.products,
+              l10n.specificProducts(rules.scope.productIds.length),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScopeItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeframeSection(AppLocalizations l10n) {
+    final startDate = DateFormat.yMMMd().format(rules.timeframe.startDate);
+    final endDate = DateFormat.yMMMd().format(rules.timeframe.endDate);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.purple.shade50, Colors.blue.shade50],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.purple.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.purple.shade700,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.eventPeriod,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  startDate,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.purple.shade900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 2,
+                      color: Colors.purple.shade300,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.to,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 30,
+                      height: 2,
+                      color: Colors.purple.shade300,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  endDate,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.purple.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMetricText(String metric, AppLocalizations l10n) {
+    switch (metric) {
+      case 'points':
+        return l10n.loyaltyPoints;
+      case 'revenue':
+        return l10n.totalRevenue;
+      case 'quantity':
+        return l10n.quantitySold;
+      default:
+        return metric;
+    }
+  }
+
+  String _formatValue(double value, String metric) {
+    if (metric == 'revenue') {
+      return '${value.toStringAsFixed(2)} TND';
+    } else if (metric == 'points') {
+      return '${value.toStringAsFixed(0)} pts';
+    } else {
+      return value.toStringAsFixed(0);
+    }
   }
 }

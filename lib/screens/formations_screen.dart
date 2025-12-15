@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:novopharma/widgets/bottom_navigation_bar.dart';
 import 'package:novopharma/controllers/formation_provider.dart';
 import 'package:novopharma/models/blog_post.dart';
@@ -774,7 +775,7 @@ class _FormationsScreenState extends State<FormationsScreen>
           child: _buildActionButton(
             'Quiz de validation',
             Icons.quiz_outlined,
-            () => _startQuiz(formation),
+            () {}, // Disabled
           ),
         ),
       );
@@ -1179,7 +1180,37 @@ class _FormationsScreenState extends State<FormationsScreen>
     );
   }
 
-  void _showVideoDialog(BlogPost formation) {
+  void _showVideoDialog(BlogPost formation) async {
+    if (!formation.hasVideo) {
+      _showSnackBar('Aucune vidéo disponible pour cette formation');
+      return;
+    }
+
+    final videoUrl = formation.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) {
+      _showSnackBar('URL de la vidéo non disponible');
+      return;
+    }
+
+    try {
+      final Uri url = Uri.parse(videoUrl);
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        // Try with inAppBrowserView as fallback
+        await launchUrl(url, mode: LaunchMode.inAppBrowserView);
+      }
+    } catch (e) {
+      print('Error launching video: $e');
+      print('Video URL: $videoUrl');
+      _showSnackBar('Erreur lors de l\'ouverture de la vidéo');
+    }
+  }
+
+  void _showVideoDialog_old(BlogPost formation) {
     if (!formation.hasVideo) {
       _showSnackBar('Aucune vidéo disponible pour cette formation');
       return;
@@ -1241,10 +1272,7 @@ class _FormationsScreenState extends State<FormationsScreen>
                     children: [
                       if (formation.hasQuiz)
                         ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            _startQuiz(formation);
-                          },
+                          onPressed: null, // Disabled
                           icon: const Icon(Icons.quiz),
                           label: const Text('Quiz de validation'),
                           style: ElevatedButton.styleFrom(

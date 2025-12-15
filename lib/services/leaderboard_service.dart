@@ -47,7 +47,9 @@ class LeaderboardService {
       for (var saleDoc in salesSnapshot.docs) {
         final data = saleDoc.data();
         final userId = data['userId'] as String?;
-        final points = data['pointsEarned'] as int?;
+        final pointsValue = data['pointsEarned'];
+        // Handle both int and double types from Firestore
+        final points = pointsValue is num ? pointsValue.toInt() : null;
         if (userId != null && points != null) {
           userPoints.update(
             userId,

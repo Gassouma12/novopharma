@@ -502,8 +502,12 @@ class _ProductScreenState extends State<ProductScreen> {
                 valueListenable: _quantityNotifier,
                 builder: (context, quantity, child) {
                   final pointsEarned = product.points * quantity;
+                  // Format to remove trailing .0 for whole numbers
+                  final pointsText = pointsEarned % 1 == 0
+                      ? pointsEarned.toInt().toString()
+                      : pointsEarned.toString();
                   return Text(
-                    '$pointsEarned',
+                    pointsText,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

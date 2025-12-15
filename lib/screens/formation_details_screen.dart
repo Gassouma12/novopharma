@@ -1061,13 +1061,65 @@ class _FormationDetailsScreenState extends State<FormationDetailsScreen> {
   }
 
   // Action Methods
-  void _showVideosSection() {
+  void _showVideosSection() async {
     if (!widget.formation.hasVideo) {
       _showSnackBar('Aucune vidéo disponible pour cette formation');
       return;
     }
 
+    // Check if youtubeVideoUrl is available first
+    if (widget.formation.youtubeVideoUrl != null &&
+        widget.formation.youtubeVideoUrl!.isNotEmpty) {
+      try {
+        final Uri url = Uri.parse(widget.formation.youtubeVideoUrl!);
+        final launched = await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!launched) {
+          // Try with inAppBrowserView as fallback
+          await launchUrl(url, mode: LaunchMode.inAppBrowserView);
+        }
+        _completeStep(0); // Mark video step as completed
+        return;
+      } catch (e) {
+        print('Error launching video: $e');
+        _showSnackBar('Erreur lors de l\'ouverture de la vidéo');
+        return;
+      }
+    }
+
+    // Check if there are video files in media array
     final videoFiles = widget.formation.videoFiles;
+
+    // If there's only one video file and it's a YouTube link, launch it directly
+    if (videoFiles.length == 1) {
+      final videoFile = videoFiles.first;
+      if (videoFile.url.contains('youtube.com') ||
+          videoFile.url.contains('youtu.be') ||
+          videoFile.url.contains('vimeo.com')) {
+        try {
+          final Uri url = Uri.parse(videoFile.url);
+          final launched = await launchUrl(
+            url,
+            mode: LaunchMode.externalApplication,
+          );
+
+          if (!launched) {
+            await launchUrl(url, mode: LaunchMode.inAppBrowserView);
+          }
+          _completeStep(0); // Mark video step as completed
+          return;
+        } catch (e) {
+          print('Error launching video: $e');
+          _showSnackBar('Erreur lors de l\'ouverture de la vidéo');
+          return;
+        }
+      }
+    }
+
+    // If multiple videos or non-YouTube videos, show the modal
 
     showDialog(
       context: context,
@@ -1300,7 +1352,15 @@ class _FormationDetailsScreenState extends State<FormationDetailsScreen> {
           videoFile.url.contains('youtu.be') ||
           videoFile.url.contains('vimeo.com')) {
         final Uri videoUri = Uri.parse(videoFile.url);
-        await _launchUrlWithFallback(videoUri, 'vidéo', isVideo: true);
+        final launched = await launchUrl(
+          videoUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!launched) {
+          // Try with inAppBrowserView as fallback
+          await launchUrl(videoUri, mode: LaunchMode.inAppBrowserView);
+        }
         return;
       }
 

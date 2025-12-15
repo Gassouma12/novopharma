@@ -1188,7 +1188,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{points} points pending approval'**
-  String pointsPendingApproval(int points);
+  String pointsPendingApproval(double points);
 
   /// No description provided for @productNotAvailable.
   ///
@@ -1273,6 +1273,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ma position sur le classement national'**
   String get myNationalPosition;
+
+  /// No description provided for @badgeEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge Earned!'**
+  String get badgeEarned;
+
+  /// No description provided for @awardedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded on {date}'**
+  String awardedOn(String date);
+
+  /// No description provided for @progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get progress;
+
+  /// No description provided for @badgesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges Left'**
+  String get badgesLeft;
+
+  /// No description provided for @target.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get target;
+
+  /// No description provided for @eventPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Period'**
+  String get eventPeriod;
+
+  /// No description provided for @to.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get to;
+
+  /// No description provided for @metric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get metric;
+
+  /// No description provided for @scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get scope;
+
+  /// No description provided for @brands.
+  ///
+  /// In en, this message translates to:
+  /// **'Brands'**
+  String get brands;
+
+  /// No description provided for @categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categories;
+
+  /// No description provided for @products.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get products;
+
+  /// No description provided for @specificProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} specific products'**
+  String specificProducts(int count);
+
+  /// No description provided for @loyaltyPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Loyalty Points'**
+  String get loyaltyPoints;
+
+  /// No description provided for @totalRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Revenue'**
+  String get totalRevenue;
+
+  /// No description provided for @quantitySold.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity Sold'**
+  String get quantitySold;
+
+  /// No description provided for @noBadgesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No badges available.'**
+  String get noBadgesAvailable;
+
+  /// No description provided for @noBadgesInCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No badges in this category yet.'**
+  String get noBadgesInCategory;
 }
 
 class _AppLocalizationsDelegate

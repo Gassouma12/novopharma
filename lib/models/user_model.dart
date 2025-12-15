@@ -10,8 +10,8 @@ class UserModel {
   final String pharmacyId;
   final String? pharmacy;
   final DateTime? dateOfBirth;
-  final int points;
-  final int pendingPluxeePoints;
+  final double points;
+  final double pendingPluxeePoints;
   final String? avatarUrl;
   final String? phone;
   final String? position;
@@ -20,7 +20,7 @@ class UserModel {
       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
 
   // Calculated property for available points
-  int get availablePoints => points - pendingPluxeePoints;
+  double get availablePoints => points - pendingPluxeePoints;
 
   UserModel({
     required this.uid,
@@ -49,8 +49,9 @@ class UserModel {
       dateOfBirth: data['dateOfBirth'] != null
           ? (data['dateOfBirth'] as Timestamp).toDate()
           : null,
-      points: data['points'] ?? 0,
-      pendingPluxeePoints: data['pendingPluxeePoints'] ?? 0,
+      points: (data['points'] as num?)?.toDouble() ?? 0.0,
+      pendingPluxeePoints:
+          (data['pendingPluxeePoints'] as num?)?.toDouble() ?? 0.0,
       avatarUrl: data['avatarUrl'],
       phone: data['phone'],
       position: data['position'],

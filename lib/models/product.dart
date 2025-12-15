@@ -7,7 +7,7 @@ class Product {
   final String category;
   final String description;
   final double price;
-  final int points;
+  final double points;
   final String sku;
   final int stock;
   final String protocol;
@@ -52,7 +52,7 @@ class Product {
       category: data['category'] ?? '',
       description: data['description'] ?? '',
       price: (data['price'] as num?)?.toDouble() ?? 0.0,
-      points: data['points'] ?? 0,
+      points: (data['points'] as num?)?.toDouble() ?? 0.0,
       sku: data['sku'] ?? '',
       stock: data['stock'] ?? 0,
       protocol: data['protocol'] ?? '',

@@ -88,6 +88,7 @@ class BlogPost {
   final String? excerpt;
   final String? coverImageUrl;
   final String? actualiteCategory;
+  final String? youtubeVideoUrl;
 
   const BlogPost({
     required this.id,
@@ -110,6 +111,7 @@ class BlogPost {
     this.excerpt,
     this.coverImageUrl,
     this.actualiteCategory,
+    this.youtubeVideoUrl,
   });
 
   factory BlogPost.fromFirestore(DocumentSnapshot doc) {
@@ -143,6 +145,7 @@ class BlogPost {
       excerpt: data['excerpt'],
       coverImageUrl: data['coverImageUrl'],
       actualiteCategory: data['actualiteCategory'],
+      youtubeVideoUrl: data['youtubeVideoUrl'],
     );
   }
 
@@ -239,7 +242,8 @@ class BlogPost {
 
   // Media type detection methods
   bool get hasVideo {
-    return media.any((file) => file.isVideo);
+    return media.any((file) => file.isVideo) ||
+        (youtubeVideoUrl != null && youtubeVideoUrl!.isNotEmpty);
   }
 
   bool get hasPdf {
@@ -285,6 +289,10 @@ class BlogPost {
 
   // Get specific media URLs by type
   String? get videoUrl {
+    // Prioritize youtubeVideoUrl over media files
+    if (youtubeVideoUrl != null && youtubeVideoUrl!.isNotEmpty) {
+      return youtubeVideoUrl;
+    }
     final videoFiles = media.where((file) => file.isVideo);
     return videoFiles.isNotEmpty ? videoFiles.first.url : null;
   }

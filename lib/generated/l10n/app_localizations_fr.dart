@@ -599,8 +599,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get close => 'Fermer';
 
   @override
-  String pointsPendingApproval(int points) {
-    return '$points points en attente d\'approbation';
+  String pointsPendingApproval(double points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString points en attente d\'approbation';
   }
 
   @override
@@ -649,4 +653,63 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get myNationalPosition => 'Ma position sur le classement national';
+
+  @override
+  String get badgeEarned => 'Badge gagné !';
+
+  @override
+  String awardedOn(String date) {
+    return 'Attribué le $date';
+  }
+
+  @override
+  String get progress => 'Progression';
+
+  @override
+  String get badgesLeft => 'Badges restants';
+
+  @override
+  String get target => 'Cible';
+
+  @override
+  String get eventPeriod => 'Période de l\'événement';
+
+  @override
+  String get to => 'à';
+
+  @override
+  String get metric => 'Métrique';
+
+  @override
+  String get scope => 'Portée';
+
+  @override
+  String get brands => 'Marques';
+
+  @override
+  String get categories => 'Catégories';
+
+  @override
+  String get products => 'Produits';
+
+  @override
+  String specificProducts(int count) {
+    return '$count produits spécifiques';
+  }
+
+  @override
+  String get loyaltyPoints => 'Points de fidélité';
+
+  @override
+  String get totalRevenue => 'Revenu total';
+
+  @override
+  String get quantitySold => 'Quantité vendue';
+
+  @override
+  String get noBadgesAvailable => 'Aucun badge disponible.';
+
+  @override
+  String get noBadgesInCategory =>
+      'Aucun badge dans cette catégorie pour le moment.';
 }

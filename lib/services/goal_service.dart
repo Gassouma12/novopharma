@@ -101,20 +101,38 @@ class GoalService {
       }
 
       // Step 4: Fetch user progress for the filtered goals
+      log('[GoalService] Fetching user progress for ${goalList.length} goals');
       final progressSnapshot = await _db
           .collection('users')
           .doc(user.uid)
           .collection('userGoalProgress')
           .get();
 
+      log(
+        '[GoalService] Found ${progressSnapshot.docs.length} progress documents',
+      );
       final Map<String, UserGoalProgress> userProgress = {
         for (var doc in progressSnapshot.docs)
           doc.id: UserGoalProgress.fromMap(doc.id, doc.data()),
       };
 
+      // Log progress details
+      for (var entry in userProgress.entries) {
+        log(
+          '[GoalService] Progress for goal ${entry.key}: value=${entry.value.progressValue}, status=${entry.value.status}',
+        );
+      }
+
       // Step 5: Combine goals with their progress
       final List<Goal> goalsWithProgress = goalList.map((goal) {
         final progress = userProgress[goal.id];
+        if (progress != null) {
+          log(
+            '[GoalService] ✅ Goal "${goal.title}" has progress: ${progress.progressValue}/${goal.targetValue}',
+          );
+        } else {
+          log('[GoalService] ⚠️ Goal "${goal.title}" has NO progress data');
+        }
         return goal.copyWith(userProgress: progress);
       }).toList();
 

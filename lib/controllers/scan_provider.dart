@@ -114,7 +114,7 @@ class ScanProvider with ChangeNotifier {
 
     try {
       // Calculate total points and total price based on quantity
-      final int totalPoints = _scannedProduct!.points * _quantity;
+      final double totalPoints = _scannedProduct!.points * _quantity;
       final double totalPrice = _scannedProduct!.price * _quantity;
 
       final newSale = Sale(

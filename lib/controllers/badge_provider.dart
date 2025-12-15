@@ -67,19 +67,24 @@ class BadgeProvider with ChangeNotifier {
     _badgesSubscription = _badgeService.streamAllBadges().listen((allBadges) {
       // When all badges update, re-fetch user badges and recalculate everything
       _userBadgesSubscription?.cancel();
-      _userBadgesSubscription =
-          _userBadgeService.streamUserBadges(userId).listen((userBadges) async {
-        await _processBadgeData(allBadges, userBadges, userId);
-      });
+      _userBadgesSubscription = _userBadgeService
+          .streamUserBadges(userId)
+          .listen((userBadges) async {
+            await _processBadgeData(allBadges, userBadges, userId);
+          });
     });
   }
 
   Future<void> _processBadgeData(
-      List<Badge> allBadges, List<UserBadge> userBadges, String userId) async {
+    List<Badge> allBadges,
+    List<UserBadge> userBadges,
+    String userId,
+  ) async {
     final List<BadgeDisplayInfo> badgeInfos = [];
     for (final badge in allBadges) {
-      final userBadge =
-          userBadges.firstWhereOrNull((ub) => ub.badgeId == badge.id);
+      final userBadge = userBadges.firstWhereOrNull(
+        (ub) => ub.badgeId == badge.id,
+      );
 
       double progress = 0.0;
       if (userBadge != null) {
@@ -112,40 +117,32 @@ class BadgeProvider with ChangeNotifier {
       }
     }
 
-    // Handle new structure
+    // Handle new structure - fetch from userBadgeProgress subcollection
     if (badge.acquisitionRules != null) {
       final rules = badge.acquisitionRules!;
-      final sales = await _saleService.getSalesHistory(
-        userId,
-        startDate: rules.timeframe.startDate,
-        endDate: rules.timeframe.endDate,
-      );
 
-      double total = 0.0;
-      // Filter sales based on scope
-      final filteredSales = sales.where((sale) {
-        // TODO: This filtering logic needs the product details for each sale
-        // For now, we assume sales match if any criteria is empty (matches all)
-        bool brandMatch = rules.scope.brands.isEmpty ||
-            rules.scope.brands.contains(sale.productBrandSnapshot);
-        bool categoryMatch = rules.scope.categories.isEmpty ||
-            rules.scope.categories.contains(sale.productCategorySnapshot);
-        bool productMatch = rules.scope.productIds.isEmpty ||
-            rules.scope.productIds.contains(sale.productId);
-        return brandMatch && categoryMatch && productMatch;
-      }).toList();
+      try {
+        // Fetch progress from Firestore subcollection
+        final progressDoc = await _badgeService.getUserBadgeProgress(
+          userId,
+          badge.id,
+        );
 
-      if (rules.metric == 'revenue') {
-        total = filteredSales.fold(
-            0, (sum, sale) => sum + (sale.totalPrice ?? 0.0));
-      } else if (rules.metric == 'quantity') {
-        total =
-            filteredSales.fold(0, (sum, sale) => sum + sale.quantity).toDouble();
+        if (progressDoc != null && progressDoc.exists) {
+          final data = progressDoc.data() as Map<String, dynamic>?;
+          final progressValue =
+              (data?['progressValue'] as num?)?.toDouble() ?? 0.0;
+
+          if (rules.targetValue == 0) return 1.0;
+          final progress = progressValue / rules.targetValue;
+          return progress.clamp(0.0, 1.0);
+        }
+
+        return 0.0; // No progress yet
+      } catch (e) {
+        print('[BadgeProvider] Error fetching badge progress: $e');
+        return 0.0;
       }
-
-      if (rules.targetValue == 0) return 1.0;
-      final progress = total / rules.targetValue;
-      return progress.clamp(0.0, 1.0);
     }
 
     return 0.0;

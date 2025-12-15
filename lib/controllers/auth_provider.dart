@@ -41,40 +41,64 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _onAuthStateChanged(User? user) async {
+    print('[AuthProvider] Auth state changed: user=${user?.uid}');
     await _userProfileSubscription?.cancel();
 
     if (user == null) {
+      print('[AuthProvider] No user, setting unauthenticated');
       _firebaseUser = null;
       _userProfile = null;
       _appAuthState = AppAuthState.unauthenticated;
     } else {
+      print(
+        '[AuthProvider] User authenticated: ${user.uid}, fetching profile...',
+      );
       _firebaseUser = user;
       _appAuthState = AppAuthState.unknown;
       _userProfileSubscription = _userService
           .getUserProfile(user.uid)
           .listen(
             (userProfile) {
+              print(
+                '[AuthProvider] User profile received: ${userProfile?.name}, status=${userProfile?.status}',
+              );
               _userProfile = userProfile;
               if (_userProfile == null) {
+                print(
+                  '[AuthProvider] Profile is null, setting authenticatedDisabled',
+                );
                 _appAuthState = AppAuthState.authenticatedDisabled;
               } else {
                 switch (_userProfile!.status) {
                   case UserStatus.active:
+                    print(
+                      '[AuthProvider] User is active, setting authenticatedActive',
+                    );
                     _appAuthState = AppAuthState.authenticatedActive;
                     break;
                   case UserStatus.pending:
+                    print(
+                      '[AuthProvider] User is pending, setting authenticatedPending',
+                    );
                     _appAuthState = AppAuthState.authenticatedPending;
                     break;
                   case UserStatus.disabled:
+                    print(
+                      '[AuthProvider] User is disabled, setting authenticatedDisabled',
+                    );
                     _appAuthState = AppAuthState.authenticatedDisabled;
                     break;
                   default:
+                    print(
+                      '[AuthProvider] Unknown status, setting unauthenticated',
+                    );
                     _appAuthState = AppAuthState.unauthenticated;
                 }
               }
               notifyListeners();
             },
             onError: (error) {
+              print('[AuthProvider] Error fetching user profile: $error');
               _appAuthState = AppAuthState.unauthenticated;
               notifyListeners();
             },

@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Nested model for acquisition rules
 class AcquisitionRules {
-  final String metric;
-  final num targetValue;
+  final String metric; // 'points', 'revenue', or 'quantity'
+  final double targetValue;
   final Scope scope;
   final Timeframe timeframe;
 
@@ -16,11 +16,12 @@ class AcquisitionRules {
 
   factory AcquisitionRules.fromMap(Map<String, dynamic> map) {
     return AcquisitionRules(
-      metric: map['metric'] ?? 'revenue',
-      targetValue: map['targetValue'] ?? 0,
+      metric: map['metric'] ?? 'points',
+      targetValue: (map['targetValue'] as num?)?.toDouble() ?? 0.0,
       scope: Scope.fromMap(map['scope'] as Map<String, dynamic>? ?? {}),
-      timeframe:
-          Timeframe.fromMap(map['timeframe'] as Map<String, dynamic>? ?? {}),
+      timeframe: Timeframe.fromMap(
+        map['timeframe'] as Map<String, dynamic>? ?? {},
+      ),
     );
   }
 }
@@ -49,10 +50,7 @@ class Timeframe {
   final DateTime startDate;
   final DateTime endDate;
 
-  Timeframe({
-    required this.startDate,
-    required this.endDate,
-  });
+  Timeframe({required this.startDate, required this.endDate});
 
   factory Timeframe.fromMap(Map<String, dynamic> map) {
     return Timeframe(
@@ -78,75 +76,63 @@ class Badge {
   final String name;
   final String description;
   final String imageUrl;
+  final bool isActive;
+  final int maxWinners;
+  final int winnerCount;
+  final AcquisitionRules acquisitionRules;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  // Old structure fields
+  // Old structure fields (for backward compatibility)
   final String? progressMetric;
   final Map<String, dynamic>? criteria;
-
-  // New structure fields
-  final bool? isActive;
-  final int? maxWinners;
-  final int? winnerCount;
-  final AcquisitionRules? acquisitionRules;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
 
   Badge({
     required this.id,
     required this.name,
     required this.description,
     required this.imageUrl,
-    // Old
+    required this.isActive,
+    required this.maxWinners,
+    required this.winnerCount,
+    required this.acquisitionRules,
+    required this.createdAt,
+    required this.updatedAt,
+    // Old (optional for backward compatibility)
     this.progressMetric,
     this.criteria,
-    // New
-    this.isActive,
-    this.maxWinners,
-    this.winnerCount,
-    this.acquisitionRules,
-    this.createdAt,
-    this.updatedAt,
   });
+
+  bool get isAvailable => winnerCount < maxWinners;
+
+  bool get isExpired =>
+      DateTime.now().isAfter(acquisitionRules.timeframe.endDate);
+
+  bool get isNotStarted =>
+      DateTime.now().isBefore(acquisitionRules.timeframe.startDate);
+
+  bool get isActiveNow =>
+      isActive && !isExpired && !isNotStarted && isAvailable;
 
   factory Badge.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-    // Check if it's the new structure by looking for 'acquisitionRules'
-    if (data.containsKey('acquisitionRules')) {
-      return Badge(
-        id: doc.id,
-        name: data['name'] ?? '',
-        description: data['description'] ?? '',
-        imageUrl: data['imageUrl'] ?? '',
-        isActive: data['isActive'] ?? false,
-        maxWinners: data['maxWinners'] as int?,
-        winnerCount: data['winnerCount'] as int?,
-        acquisitionRules: AcquisitionRules.fromMap(
-          data['acquisitionRules'] as Map<String, dynamic>,
-        ),
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-        updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
-        // Set old fields to null for new structure
-        progressMetric: null,
-        criteria: null,
-      );
-    } else {
-      // It's the old structure
-      return Badge(
-        id: doc.id,
-        name: data['name'] ?? '',
-        description: data['description'] ?? '',
-        imageUrl: data['imageUrl'] ?? '',
-        progressMetric: data['progressMetric'] ?? 'manual',
-        criteria: data['criteria'] as Map<String, dynamic>? ?? {},
-        // Set new fields to null for old structure
-        isActive: null,
-        maxWinners: null,
-        winnerCount: null,
-        acquisitionRules: null,
-        createdAt: null,
-        updatedAt: null,
-      );
-    }
+    return Badge(
+      id: doc.id,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      isActive: data['isActive'] ?? false,
+      maxWinners: data['maxWinners'] ?? 0,
+      winnerCount: data['winnerCount'] ?? 0,
+      acquisitionRules: AcquisitionRules.fromMap(
+        data['acquisitionRules'] as Map<String, dynamic>? ?? {},
+      ),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      // Old structure fields
+      progressMetric: data['progressMetric'],
+      criteria: data['criteria'] as Map<String, dynamic>?,
+    );
   }
 }

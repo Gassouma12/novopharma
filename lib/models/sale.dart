@@ -7,7 +7,7 @@ class Sale {
   final String productId;
   final String productNameSnapshot;
   final int quantity;
-  final int pointsEarned;
+  final double pointsEarned;
   final DateTime saleDate;
   final double totalPrice;
   final String? productBrandSnapshot;
@@ -36,7 +36,7 @@ class Sale {
       productId: data['productId'] ?? '',
       productNameSnapshot: data['productNameSnapshot'] ?? '',
       quantity: data['quantity'] ?? 0,
-      pointsEarned: data['pointsEarned'] ?? 0,
+      pointsEarned: (data['pointsEarned'] as num?)?.toDouble() ?? 0.0,
       saleDate: (data['saleDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       totalPrice: (data['totalPrice'] as num?)?.toDouble() ?? 0.0,
       productBrandSnapshot: data['productBrandSnapshot'],

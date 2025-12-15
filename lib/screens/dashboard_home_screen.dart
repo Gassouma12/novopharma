@@ -461,6 +461,10 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     LeaderboardProvider leaderboard,
   ) {
     final totalUsers = leaderboard.leaderboardData.length;
+    final currentUserData = leaderboard.leaderboardData.firstWhere(
+      (userData) => userData['userId'] == user.uid,
+      orElse: () => {'rank': 'N/A'},
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -486,12 +490,44 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3B82F6),
-                    shape: BoxShape.circle,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
                   ),
-                  child: const Icon(Icons.star, color: Colors.white, size: 40),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1F9BD1), Color(0xFF1887B8)],
+                    ),
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1F9BD1).withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star,
+                        color: Color(0xFFF59E0B),
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '#${currentUserData['rank']}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(

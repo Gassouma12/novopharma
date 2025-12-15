@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-len */
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -20,7 +20,7 @@ export const processSaleForBadgeAwards = onDocumentCreated("sales/{saleId}", asy
   }
 
   const sale = snapshot.data();
-  const {userId, productId, quantity, totalPrice} = sale;
+  const { userId, productId, quantity, totalPrice } = sale;
 
   if (!userId || !productId) {
     logger.error(`Sale document ${event.params.saleId} is missing userId or productId.`);
@@ -56,104 +56,132 @@ export const processSaleForBadgeAwards = onDocumentCreated("sales/{saleId}", asy
         continue;
       }
 
-      // 4. Check if the user already has this badge
-      const userBadgeQuery = await db.collection("user_badges")
-        .where("userId", "==", userId)
-        .where("badgeId", "==", badgeId)
-        .limit(1)
-        .get();
+      // 4. Check timeframe validity
+      const rules = badge.acquisitionRules;
+      const now = new Date();
+      const startDate = rules.timeframe.startDate.toDate ? rules.timeframe.startDate.toDate() : new Date(rules.timeframe.startDate);
+      const endDate = rules.timeframe.endDate.toDate ? rules.timeframe.endDate.toDate() : new Date(rules.timeframe.endDate);
 
-      if (!userBadgeQuery.empty) {
+      if (now < startDate || now > endDate) {
+        logger.info(`Badge ${badgeId} is outside timeframe. Skipping.`);
+        continue;
+      }
+
+      // 5. Check if the user already has this badge
+      const userBadgeDoc = await db.collection("users").doc(userId)
+        .collection("userBadges").doc(badgeId).get();
+
+      if (userBadgeDoc.exists) {
         logger.info(`User ${userId} already has badge ${badgeId}. Skipping.`);
         continue;
       }
 
-      // 5. Check if the sale meets the badge's acquisition criteria
-      const isEligible = isSaleEligibleForBadge(sale, product, badge.acquisitionRules);
+      // 6. Check if sale meets scope criteria
+      const isEligible = isSaleEligibleForBadgeScope(sale, product, rules.scope);
 
       if (isEligible) {
-        logger.info(`Sale ${event.params.saleId} is eligible for badge ${badgeId} for user ${userId}.`);
+        logger.info(`Sale ${event.params.saleId} is eligible for badge ${badgeId} tracking.`);
 
-        // Use a transaction to award the badge safely
-        await db.runTransaction(async (transaction) => {
-          const badgeRef = db.collection("badges").doc(badgeId);
-          const freshBadgeDoc = await transaction.get(badgeRef);
-          const freshBadge = freshBadgeDoc.data();
+        // 7. Track progress for this badge
+        const progressRef = db.collection("users").doc(userId)
+          .collection("userBadgeProgress").doc(badgeId);
 
-          if (!freshBadge) {
-            throw new Error(`Badge ${badgeId} not found during transaction.`);
-          }
+        const progressDoc = await progressRef.get();
+        const incrementValue = rules.metric === "revenue" ? totalPrice :
+          rules.metric === "quantity" ? quantity :
+            sale.pointsEarned || 0; // For 'points' metric
 
-          // **This is the key logic for the user's request**
-          // Check maxWinners only if it is a positive number.
-          // If maxWinners is null, undefined, 0, or negative, the check is skipped.
-          const maxWinners = freshBadge.maxWinners;
-          if (maxWinners && maxWinners > 0) {
-            const winnerCount = freshBadge.winnerCount || 0;
-            if (winnerCount >= maxWinners) {
-              logger.info(`Badge ${badgeId} has reached its max winners limit of ${maxWinners}. Cannot award to user ${userId}.`);
-              return; // Stop the transaction
+        const currentProgress = progressDoc.exists ? (progressDoc.data()?.progressValue || 0) : 0;
+        const newProgress = currentProgress + incrementValue;
+
+        // Update progress
+        await progressRef.set({
+          progressValue: newProgress,
+          metric: rules.metric,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        logger.info(`Updated badge progress for user ${userId} on badge ${badgeId}. New progress: ${newProgress}/${rules.targetValue}`);
+
+        // 8. Check if target is reached
+        if (newProgress >= rules.targetValue) {
+          logger.info(`User ${userId} reached target for badge ${badgeId}!`);
+
+          // Use a transaction to award the badge safely
+          await db.runTransaction(async (transaction) => {
+            const badgeRef = db.collection("badges").doc(badgeId);
+            const freshBadgeDoc = await transaction.get(badgeRef);
+            const freshBadge = freshBadgeDoc.data();
+
+            if (!freshBadge) {
+              throw new Error(`Badge ${badgeId} not found during transaction.`);
             }
-          }
 
-          // Award the badge
-          const newUserBadgeRef = db.collection("user_badges").doc();
-          transaction.set(newUserBadgeRef, {
-            userId: userId,
-            badgeId: badgeId,
-            awardedAt: admin.firestore.FieldValue.serverTimestamp(),
-            badgeName: freshBadge.name,
-            badgeDescription: freshBadge.description,
-            badgeImageUrl: freshBadge.imageUrl,
-            context: `Awarded via sale ${event.params.saleId}`,
+            // Check maxWinners limit
+            const maxWinners = freshBadge.maxWinners || 0;
+            const winnerCount = freshBadge.winnerCount || 0;
+
+            if (maxWinners > 0 && winnerCount >= maxWinners) {
+              logger.info(`Badge ${badgeId} has reached max winners (${maxWinners}). Cannot award to user ${userId}.`);
+              return;
+            }
+
+            // Award the badge to user's subcollection
+            const userBadgeRef = db.collection("users").doc(userId)
+              .collection("userBadges").doc(badgeId);
+
+            transaction.set(userBadgeRef, {
+              badgeId: badgeId,
+              badgeName: freshBadge.name,
+              badgeDescription: freshBadge.description,
+              imageUrl: freshBadge.imageUrl,
+              awardedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            // Increment winner count
+            transaction.update(badgeRef, {
+              winnerCount: admin.firestore.FieldValue.increment(1),
+            });
+
+            logger.info(`✅ Successfully awarded badge ${badgeId} to user ${userId}!`);
           });
-
-          // Increment the winner count
-          transaction.update(badgeRef, {
-            winnerCount: admin.firestore.FieldValue.increment(1),
-          });
-
-          logger.info(`Successfully awarded badge ${badgeId} to user ${userId} in transaction.`);
-        });
+        }
       }
     }
   } catch (error) {
-    logger.error(`Failed to process sale ${event.params.saleId} for badge awards.`, {error});
+    logger.error(`Failed to process sale ${event.params.saleId} for badge awards.`, { error });
   }
 });
 
 /**
  * Checks if a sale is eligible for a badge based on its acquisition rules.
+/**
+ * Checks if a sale meets the scope criteria for a badge.
  * @param {any} sale The sale document data.
  * @param {any} product The product document data.
- * @param {any} rules The acquisitionRules map from the badge.
- * @return {boolean} True if the sale is eligible, false otherwise.
+ * @param {any} scope The scope object from acquisitionRules.
+ * @return {boolean} True if the sale matches the scope, false otherwise.
  */
-function isSaleEligibleForBadge(sale: any, product: any, rules: any): boolean {
-  if (!rules || !rules.scope || !rules.timeframe) return false;
+function isSaleEligibleForBadgeScope(sale: any, product: any, scope: any): boolean {
+  if (!scope) return true; // No scope restrictions
 
-  const now = new Date();
-  const startDate = rules.timeframe.startDate.toDate();
-  const endDate = rules.timeframe.endDate.toDate();
+  // Check brand criteria
+  if (scope.brands?.length > 0 && !scope.brands.includes(product?.marque)) {
+    return false;
+  }
 
-  // Check timeframe
-  if (now < startDate || now > endDate) return false;
+  // Check category criteria
+  if (scope.categories?.length > 0 && !scope.categories.includes(product?.category)) {
+    return false;
+  }
 
-  // Check scope criteria
-  const {scope, metric, targetValue} = rules;
-  if (scope.brands?.length > 0 && !scope.brands.includes(product?.marque)) return false;
-  if (scope.categories?.length > 0 && !scope.categories.includes(product?.category)) return false;
-  if (scope.productIds?.length > 0 && !scope.productIds.includes(sale.productId)) return false;
+  // Check product ID criteria
+  if (scope.productIds?.length > 0 && !scope.productIds.includes(sale.productId)) {
+    return false;
+  }
 
-  // Check metric value
-  const saleValue = metric === "revenue" ? sale.totalPrice : sale.quantity;
-  if (saleValue < targetValue) return false;
-
-
-  return true;
+  return true; // Sale matches all scope criteria
 }
-
-
 /**
  * This Cloud Function is the heart of the goal-tracking system.
  * It automatically triggers whenever a new document is created in the 'sales' collection.
@@ -178,8 +206,8 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
   }
 
   const sale = snapshot.data();
-  const {userId, pharmacyId, productId, quantity, totalPrice} = sale;
-  const {saleId} = event.params;
+  const { userId, pharmacyId, productId, quantity, totalPrice } = sale;
+  const { saleId } = event.params;
 
   // Basic validation
   if (!userId) {
@@ -248,13 +276,13 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
         await userProgressRef.set({
           progressValue: newProgress,
           status: "in-progress",
-        }, {merge: true});
+        }, { merge: true });
 
         logger.info(`Updated progress for user ${userId} on goal ${goalId}. New progress: ${newProgress}`);
 
         // Check for goal completion
         if (newProgress >= goal.targetValue) {
-          await userProgressRef.update({status: "completed"});
+          await userProgressRef.update({ status: "completed" });
 
           // Award points to the user
           await db.collection("users").doc(userId).update({
@@ -266,7 +294,7 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
       }
     }
   } catch (error) {
-    logger.error(`Failed to process sale ${saleId} for goal tracking.`, {error});
+    logger.error(`Failed to process sale ${saleId} for goal tracking.`, { error });
   }
 });
 
@@ -280,7 +308,7 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
  * @return {boolean} True if the sale is eligible, false otherwise.
  */
 function isSaleEligible(sale: any, goal: any, user: any, pharmacy: any, product: any): boolean {
-  const {criteria} = goal;
+  const { criteria } = goal;
   if (!criteria) return true; // No criteria means eligible for all
 
   // Check product-related criteria
