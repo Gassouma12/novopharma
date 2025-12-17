@@ -56,7 +56,7 @@ class PluxeeRedemptionService {
     required String userId,
     required String userName,
     required String userEmail,
-    required int pointsToRedeem,
+    required double pointsToRedeem,
   }) async {
     try {
       // Get conversion rate
@@ -78,8 +78,14 @@ class PluxeeRedemptionService {
         }
 
         final userData = userDoc.data()!;
-        final currentPoints = userData['points'] as int? ?? 0;
-        final pendingPoints = userData['pendingPluxeePoints'] as int? ?? 0;
+        final currentPointsValue = userData['points'];
+        final currentPoints = currentPointsValue is num
+            ? currentPointsValue.toDouble()
+            : 0.0;
+        final pendingPointsValue = userData['pendingPluxeePoints'];
+        final pendingPoints = pendingPointsValue is num
+            ? pendingPointsValue.toDouble()
+            : 0.0;
         final availablePoints = currentPoints - pendingPoints;
 
         if (availablePoints < pointsToRedeem) {
@@ -170,7 +176,10 @@ class PluxeeRedemptionService {
           throw Exception('Can only cancel pending requests');
         }
 
-        final pointsToRedeem = requestData['pointsToRedeem'] as int;
+        final pointsToRedeemValue = requestData['pointsToRedeem'];
+        final pointsToRedeem = pointsToRedeemValue is num
+            ? pointsToRedeemValue.toDouble()
+            : 0.0;
 
         // Delete the request
         transaction.delete(requestRef);

@@ -32,8 +32,8 @@ class PluxeeRedemptionProvider with ChangeNotifier {
   List<PluxeeRedemptionRequest> get processedRequests =>
       _requests.where((r) => !r.isPending).toList();
 
-  int get totalPendingPoints =>
-      pendingRequests.fold(0, (sum, request) => sum + request.pointsToRedeem);
+  double get totalPendingPoints =>
+      pendingRequests.fold(0.0, (sum, request) => sum + request.pointsToRedeem);
 
   void update(AuthProvider authProvider) {
     if (authProvider.userProfile?.uid != _authProvider.userProfile?.uid) {
@@ -84,7 +84,7 @@ class PluxeeRedemptionProvider with ChangeNotifier {
         );
   }
 
-  Future<String?> createRedemptionRequest(int pointsToRedeem) async {
+  Future<String?> createRedemptionRequest(double pointsToRedeem) async {
     if (_authProvider.userProfile == null) {
       return 'User not logged in';
     }
@@ -109,7 +109,7 @@ class PluxeeRedemptionProvider with ChangeNotifier {
     );
   }
 
-  double calculatePluxeeCredits(int points) {
+  double calculatePluxeeCredits(double points) {
     return points / _conversionRate;
   }
 

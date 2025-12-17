@@ -7,7 +7,7 @@ class PluxeeRedemptionRequest {
   final String userId;
   final String userNameSnapshot;
   final String userEmailSnapshot;
-  final int pointsToRedeem;
+  final double pointsToRedeem;
   final double pluxeeCreditsEquivalent;
   final RedemptionStatus status;
   final DateTime requestedAt;
@@ -36,9 +36,9 @@ class PluxeeRedemptionRequest {
       userId: data['userId'] ?? '',
       userNameSnapshot: data['userNameSnapshot'] ?? '',
       userEmailSnapshot: data['userEmailSnapshot'] ?? '',
-      pointsToRedeem: data['pointsToRedeem'] ?? 0,
-      pluxeeCreditsEquivalent: (data['pluxeeCreditsEquivalent'] ?? 0)
-          .toDouble(),
+      pointsToRedeem: (data['pointsToRedeem'] as num?)?.toDouble() ?? 0.0,
+      pluxeeCreditsEquivalent:
+          (data['pluxeeCreditsEquivalent'] as num?)?.toDouble() ?? 0.0,
       status: _statusFromString(data['status']),
       requestedAt: _parseDate(data['requestedAt']) ?? DateTime.now(),
       processedAt: _parseDate(data['processedAt']),

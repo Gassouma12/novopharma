@@ -16,7 +16,7 @@ class PluxeeRedemptionScreen extends StatefulWidget {
 
 class _PluxeeRedemptionScreenState extends State<PluxeeRedemptionScreen> {
   final TextEditingController _pointsController = TextEditingController();
-  int _selectedPoints = 0;
+  double _selectedPoints = 0.0;
   bool _isSubmitting = false;
 
   @override
@@ -37,7 +37,7 @@ class _PluxeeRedemptionScreenState extends State<PluxeeRedemptionScreen> {
     if (currentUser == null) return;
 
     _pointsController.clear();
-    _selectedPoints = 0;
+    _selectedPoints = 0.0;
 
     showModalBottomSheet(
       context: context,
@@ -104,7 +104,9 @@ class _PluxeeRedemptionScreenState extends State<PluxeeRedemptionScreen> {
                   const SizedBox(height: 24),
                   TextField(
                     controller: _pointsController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: l10n.pointsToRedeem,
                       hintText: l10n.enterAmount,
@@ -116,7 +118,7 @@ class _PluxeeRedemptionScreenState extends State<PluxeeRedemptionScreen> {
                     ),
                     onChanged: (value) {
                       setModalState(() {
-                        _selectedPoints = int.tryParse(value) ?? 0;
+                        _selectedPoints = double.tryParse(value) ?? 0.0;
                       });
                     },
                   ),
