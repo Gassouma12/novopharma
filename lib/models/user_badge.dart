@@ -34,4 +34,23 @@ class UserBadge {
       awardedAt: (data['awardedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
+
+  /// Factory for subcollection where document ID is the badge ID
+  /// and uses 'imageUrl' field instead of 'badgeImageUrl'
+  factory UserBadge.fromSubcollection(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return UserBadge(
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      badgeId: doc.id, // Document ID IS the badge ID
+      badgeName: data['badgeName'] ?? '',
+      badgeDescription: data['badgeDescription'] ?? '',
+      badgeImageUrl:
+          data['imageUrl'] ??
+          data['badgeImageUrl'] ??
+          '', // Handle both field names
+      context: data['context'] ?? '',
+      awardedAt: (data['awardedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }

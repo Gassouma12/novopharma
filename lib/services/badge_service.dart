@@ -95,6 +95,34 @@ class BadgeService {
     }
   }
 
+  /// Stream user badges from subcollection
+  Stream<List<UserBadge>> streamUserBadgesFromSubcollection(String userId) {
+    try {
+      log(
+        '[BadgeService] Setting up stream for user badges subcollection: $userId',
+      );
+      return _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('userBadges')
+          .snapshots()
+          .map((querySnapshot) {
+            log(
+              '[BadgeService] Subcollection received ${querySnapshot.docs.length} badges',
+            );
+            return querySnapshot.docs.map((doc) {
+              log(
+                '[BadgeService] Subcollection badge: ${doc.id}, data: ${doc.data()}',
+              );
+              return UserBadge.fromSubcollection(doc);
+            }).toList();
+          });
+    } catch (e) {
+      log('[BadgeService] Error streaming user badges from subcollection: $e');
+      return Stream.value([]);
+    }
+  }
+
   /// Stream all badges (for UI display)
   Stream<List<Badge>> streamAllBadges() {
     try {
