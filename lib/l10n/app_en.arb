@@ -190,10 +190,10 @@
     },
     "pluxeeCredits": "Rewards & Points Exchange",
     "redeemPluxeeCredits": "Redeem Pluxee Credits",
-    "howItWorks": "How it works",
-    "choosePointsToConvert": "Choose how many points you want to convert",
-    "submitForReview": "Submit your request for admin review",
-    "onceApproved": "Once approved, points will be converted to Pluxee credits",
+    "howItWorks": "Redeem My Points – How Does It Work?",
+    "choosePointsToConvert": "Choose the number of points you wish to convert",
+    "submitForReview": "Validate your request with one click",
+    "onceApproved": "We process your request and get back to you with an answer within 72 business hours",
     "conversionRate": "{points} points = 1 Pluxee credit",
     "@conversionRate": {
         "placeholders": {
@@ -243,7 +243,7 @@
     "productNotAvailableMessage": "This product is not available at the moment. Please try again later.",
     "goBack": "Go Back",
     "pointsAccumulatedToDate": "Points accumulated\nto date",
-    "currentPointsBalance": "Solde de points\nactuels",
+    "currentPointsBalance": "Usable Points\nBalance",
     "rankingOn": "Classement sur xx inscrits",
     "outOf": "out of {count} registered",
     "@outOf": {
@@ -297,9 +297,11 @@
             }
         }
     },
-    "loyaltyPoints": "Loyalty Points",
+    "loyaltyPoints": "Cumulative Points",
     "totalRevenue": "Total Revenue",
     "quantitySold": "Quantity Sold",
+    "badgeRewardPoints": "Points Rewarded",
+    "showLess": "Show Less",
     "noBadgesAvailable": "No badges available.",
     "noBadgesInCategory": "No badges in this category yet."
 }

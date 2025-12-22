@@ -6,6 +6,7 @@ import 'package:novopharma/models/user_model.dart';
 import 'package:novopharma/services/auth_service.dart';
 import 'package:novopharma/services/storage_service.dart';
 import 'package:novopharma/services/user_service.dart';
+import 'package:novopharma/services/notification_service.dart';
 
 enum AppAuthState {
   unknown,
@@ -19,11 +20,13 @@ class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   final StorageService _storageService = StorageService();
+  final NotificationService _notificationService = NotificationService();
 
   User? _firebaseUser;
   UserModel? _userProfile;
   AppAuthState _appAuthState = AppAuthState.unknown;
   StreamSubscription<UserModel?>? _userProfileSubscription;
+  bool _fcmTokenSaved = false; // Prevent duplicate FCM saves
 
   AuthProvider() {
     _authService.authStateChanges.listen(_onAuthStateChanged);
@@ -41,64 +44,46 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _onAuthStateChanged(User? user) async {
-    print('[AuthProvider] Auth state changed: user=${user?.uid}');
     await _userProfileSubscription?.cancel();
 
     if (user == null) {
-      print('[AuthProvider] No user, setting unauthenticated');
       _firebaseUser = null;
       _userProfile = null;
       _appAuthState = AppAuthState.unauthenticated;
+      _fcmTokenSaved = false; // Reset on logout
     } else {
-      print(
-        '[AuthProvider] User authenticated: ${user.uid}, fetching profile...',
-      );
       _firebaseUser = user;
       _appAuthState = AppAuthState.unknown;
       _userProfileSubscription = _userService
           .getUserProfile(user.uid)
           .listen(
             (userProfile) {
-              print(
-                '[AuthProvider] User profile received: ${userProfile?.name}, status=${userProfile?.status}',
-              );
               _userProfile = userProfile;
               if (_userProfile == null) {
-                print(
-                  '[AuthProvider] Profile is null, setting authenticatedDisabled',
-                );
                 _appAuthState = AppAuthState.authenticatedDisabled;
               } else {
                 switch (_userProfile!.status) {
                   case UserStatus.active:
-                    print(
-                      '[AuthProvider] User is active, setting authenticatedActive',
-                    );
                     _appAuthState = AppAuthState.authenticatedActive;
+                    // Save FCM token when user becomes active (only once)
+                    if (!_fcmTokenSaved) {
+                      _fcmTokenSaved = true;
+                      _saveFCMToken(user.uid);
+                    }
                     break;
                   case UserStatus.pending:
-                    print(
-                      '[AuthProvider] User is pending, setting authenticatedPending',
-                    );
                     _appAuthState = AppAuthState.authenticatedPending;
                     break;
                   case UserStatus.disabled:
-                    print(
-                      '[AuthProvider] User is disabled, setting authenticatedDisabled',
-                    );
                     _appAuthState = AppAuthState.authenticatedDisabled;
                     break;
                   default:
-                    print(
-                      '[AuthProvider] Unknown status, setting unauthenticated',
-                    );
                     _appAuthState = AppAuthState.unauthenticated;
                 }
               }
               notifyListeners();
             },
             onError: (error) {
-              print('[AuthProvider] Error fetching user profile: $error');
               _appAuthState = AppAuthState.unauthenticated;
               notifyListeners();
             },
@@ -199,6 +184,15 @@ class AuthProvider with ChangeNotifier {
       return e.message;
     } catch (e) {
       return 'An unexpected error occurred.';
+    }
+  }
+
+  // Save FCM token to user document
+  Future<void> _saveFCMToken(String userId) async {
+    try {
+      await _notificationService.saveFCMToken(userId);
+    } catch (e) {
+      // Silently handle FCM token save errors
     }
   }
 }

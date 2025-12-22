@@ -82,6 +82,7 @@ class Badge {
   final AcquisitionRules acquisitionRules;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? points; // Points awarded when badge is earned
 
   // Old structure fields (for backward compatibility)
   final String? progressMetric;
@@ -98,6 +99,7 @@ class Badge {
     required this.acquisitionRules,
     required this.createdAt,
     required this.updatedAt,
+    this.points,
     // Old (optional for backward compatibility)
     this.progressMetric,
     this.criteria,
@@ -130,6 +132,7 @@ class Badge {
       ),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      points: data['points'] as int?,
       // Old structure fields
       progressMetric: data['progressMetric'],
       criteria: data['criteria'] as Map<String, dynamic>?,

@@ -836,7 +836,9 @@ class _ProductScreenState extends State<ProductScreen> {
               child: ValueListenableBuilder<int>(
                 valueListenable: _quantityNotifier,
                 builder: (context, quantity, child) {
+                  // Keep totalPrice calculation for internal use but don't show it
                   final totalPrice = product.price * quantity;
+                  // Display only the unit price (fixed, not multiplied)
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,7 +853,7 @@ class _ProductScreenState extends State<ProductScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${totalPrice.toStringAsFixed(2)} TND',
+                        '${product.price.toStringAsFixed(2)} TND',
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,

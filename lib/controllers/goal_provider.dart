@@ -34,14 +34,15 @@ class GoalProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> fetchGoals() async {
-    Future.microtask(() {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-    });
+    if (_isLoading) return; // Prevent duplicate calls
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
       _goals = await _goalService.getUserGoals();
+      _error = null;
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -1031,25 +1031,25 @@ abstract class AppLocalizations {
   /// No description provided for @howItWorks.
   ///
   /// In en, this message translates to:
-  /// **'How it works'**
+  /// **'Redeem My Points – How Does It Work?'**
   String get howItWorks;
 
   /// No description provided for @choosePointsToConvert.
   ///
   /// In en, this message translates to:
-  /// **'Choose how many points you want to convert'**
+  /// **'Choose the number of points you wish to convert'**
   String get choosePointsToConvert;
 
   /// No description provided for @submitForReview.
   ///
   /// In en, this message translates to:
-  /// **'Submit your request for admin review'**
+  /// **'Validate your request with one click'**
   String get submitForReview;
 
   /// No description provided for @onceApproved.
   ///
   /// In en, this message translates to:
-  /// **'Once approved, points will be converted to Pluxee credits'**
+  /// **'We process your request and get back to you with an answer within 72 business hours'**
   String get onceApproved;
 
   /// No description provided for @conversionRate.
@@ -1217,7 +1217,7 @@ abstract class AppLocalizations {
   /// No description provided for @currentPointsBalance.
   ///
   /// In en, this message translates to:
-  /// **'Solde de points\nactuels'**
+  /// **'Usable Points\nBalance'**
   String get currentPointsBalance;
 
   /// No description provided for @rankingOn.
@@ -1355,7 +1355,7 @@ abstract class AppLocalizations {
   /// No description provided for @loyaltyPoints.
   ///
   /// In en, this message translates to:
-  /// **'Loyalty Points'**
+  /// **'Cumulative Points'**
   String get loyaltyPoints;
 
   /// No description provided for @totalRevenue.
@@ -1369,6 +1369,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quantity Sold'**
   String get quantitySold;
+
+  /// No description provided for @badgeRewardPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points Rewarded'**
+  String get badgeRewardPoints;
+
+  /// No description provided for @showLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Less'**
+  String get showLess;
 
   /// No description provided for @noBadgesAvailable.
   ///

@@ -505,18 +505,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get redeemPluxeeCredits => 'Redeem Pluxee Credits';
 
   @override
-  String get howItWorks => 'How it works';
+  String get howItWorks => 'Redeem My Points – How Does It Work?';
 
   @override
   String get choosePointsToConvert =>
-      'Choose how many points you want to convert';
+      'Choose the number of points you wish to convert';
 
   @override
-  String get submitForReview => 'Submit your request for admin review';
+  String get submitForReview => 'Validate your request with one click';
 
   @override
   String get onceApproved =>
-      'Once approved, points will be converted to Pluxee credits';
+      'We process your request and get back to you with an answer within 72 business hours';
 
   @override
   String conversionRate(int points) {
@@ -613,7 +613,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pointsAccumulatedToDate => 'Points accumulated\nto date';
 
   @override
-  String get currentPointsBalance => 'Solde de points\nactuels';
+  String get currentPointsBalance => 'Usable Points\nBalance';
 
   @override
   String get rankingOn => 'Classement sur xx inscrits';
@@ -690,13 +690,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get loyaltyPoints => 'Loyalty Points';
+  String get loyaltyPoints => 'Cumulative Points';
 
   @override
   String get totalRevenue => 'Total Revenue';
 
   @override
   String get quantitySold => 'Quantity Sold';
+
+  @override
+  String get badgeRewardPoints => 'Points Rewarded';
+
+  @override
+  String get showLess => 'Show Less';
 
   @override
   String get noBadgesAvailable => 'No badges available.';

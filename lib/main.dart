@@ -16,6 +16,8 @@ import 'package:novopharma/controllers/scan_provider.dart';
 import 'package:novopharma/controllers/locale_provider.dart';
 import 'package:novopharma/controllers/formation_provider.dart';
 import 'package:novopharma/controllers/actualite_provider.dart';
+import 'package:novopharma/controllers/notification_provider.dart';
+import 'package:novopharma/services/notification_service.dart';
 import 'package:novopharma/firebase_options.dart';
 import 'package:novopharma/navigation.dart';
 import 'package:novopharma/navigation_observer.dart';
@@ -28,15 +30,23 @@ import 'package:novopharma/screens/goals_screen.dart';
 import 'package:novopharma/screens/barcode_scanner_screen.dart';
 import 'package:novopharma/screens/login_screen.dart';
 import 'package:novopharma/screens/pluxee_redemption_screen.dart';
+import 'package:novopharma/screens/formation_details_screen.dart';
+import 'package:novopharma/models/blog_post.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize notification service
+  await NotificationService().initialize();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LeaderboardProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProxyProvider<AuthProvider, GoalProvider>(
           create: (context) =>
               GoalProvider(Provider.of<AuthProvider>(context, listen: false)),
@@ -91,6 +101,38 @@ class NovoPharmaApp extends StatelessWidget {
       locale: localeProvider.locale,
       home: const AuthWrapper(),
       navigatorObservers: [routeObserver],
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes for formations from notifications
+        if (settings.name?.startsWith('/formation/') == true) {
+          final formationId = settings.name!.split('/').last;
+          return MaterialPageRoute(
+            builder: (context) => FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('blogPosts')
+                  .doc(formationId)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    !snapshot.data!.exists) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('Erreur')),
+                    body: const Center(child: Text('Formation introuvable')),
+                  );
+                }
+                final formation = BlogPost.fromFirestore(snapshot.data!);
+                return FormationDetailsScreen(formation: formation);
+              },
+            ),
+          );
+        }
+        return null;
+      },
       routes: {
         '/dashboard_home': (context) => const DashboardHomeScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),

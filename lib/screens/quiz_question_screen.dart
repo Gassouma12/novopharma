@@ -76,9 +76,10 @@ class _QuizQuestionScreenState extends State<QuizQuestionScreen> {
         correctAnswers++;
       }
     }
-    final pointsEarned =
-        (correctAnswers / widget.quiz.questions.length * widget.quiz.points)
-            .round();
+    // Only award points if all questions are correct
+    final pointsEarned = (correctAnswers == widget.quiz.questions.length)
+        ? widget.quiz.points
+        : 0;
     await QuizService().submitQuiz(
       userId,
       widget.quiz.id,

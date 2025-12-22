@@ -6,6 +6,7 @@ import 'package:novopharma/models/user_model.dart';
 import 'package:novopharma/screens/auth_wrapper.dart';
 import 'package:novopharma/widgets/bottom_navigation_bar.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:novopharma/screens/change_password_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:novopharma/controllers/locale_provider.dart';
@@ -71,26 +72,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50,
+      imageQuality: 80,
     );
 
     if (image != null) {
-      setState(() => _isUploadingAvatar = true);
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final error = await authProvider.updateAvatar(File(image.path));
+      // Crop the image
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Recadrer la photo',
+            toolbarColor: const Color(0xFF1F9BD1),
+            toolbarWidgetColor: Colors.white,
+            activeControlsWidgetColor: const Color(0xFF1F9BD1),
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            aspectRatioPresets: [CropAspectRatioPreset.square],
+          ),
+          IOSUiSettings(
+            title: 'Recadrer la photo',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPresets: [CropAspectRatioPreset.square],
+          ),
+        ],
+      );
 
-      if (mounted) {
-        if (error == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Avatar updated successfully!')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Avatar update failed: $error')),
-          );
+      if (croppedFile != null) {
+        setState(() => _isUploadingAvatar = true);
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final error = await authProvider.updateAvatar(File(croppedFile.path));
+
+        if (mounted) {
+          if (error == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Avatar mis à jour avec succès!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Échec de la mise à jour: $error')),
+            );
+          }
         }
+        setState(() => _isUploadingAvatar = false);
       }
-      setState(() => _isUploadingAvatar = false);
     }
   }
 

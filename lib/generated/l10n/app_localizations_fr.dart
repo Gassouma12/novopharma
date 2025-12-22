@@ -512,19 +512,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get redeemPluxeeCredits => 'Échanger des crédits Pluxee';
 
   @override
-  String get howItWorks => 'Comment ça marche';
+  String get howItWorks => 'Échanger mes points – Comment ça marche ?';
 
   @override
   String get choosePointsToConvert =>
-      'Choisissez combien de points vous voulez convertir';
+      'Choisissez le nombre de points que vous souhaitez convertir';
 
   @override
-  String get submitForReview =>
-      'Soumettez votre demande pour examen par un administrateur';
+  String get submitForReview => 'Validez votre demande en un clic';
 
   @override
   String get onceApproved =>
-      'Une fois approuvée, les points seront convertis en crédits Pluxee';
+      'Nous traitons votre demande et vous revenons avec une réponse dans les 72h ouvrées';
 
   @override
   String conversionRate(int points) {
@@ -621,7 +620,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pointsAccumulatedToDate => 'Points cumulés\nà ce jour';
 
   @override
-  String get currentPointsBalance => 'Solde de points\nactuels';
+  String get currentPointsBalance => 'Solde de points\nutilisables';
 
   @override
   String get rankingOn => 'Classement sur xx inscrits';
@@ -698,13 +697,19 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get loyaltyPoints => 'Points de fidélité';
+  String get loyaltyPoints => 'Points cumulés';
 
   @override
   String get totalRevenue => 'Revenu total';
 
   @override
   String get quantitySold => 'Quantité vendue';
+
+  @override
+  String get badgeRewardPoints => 'Points accordés';
+
+  @override
+  String get showLess => 'Voir moins';
 
   @override
   String get noBadgesAvailable => 'Aucun badge disponible.';

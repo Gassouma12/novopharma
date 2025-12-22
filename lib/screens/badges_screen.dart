@@ -6,6 +6,7 @@ import 'package:novopharma/widgets/badge_card.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:novopharma/generated/l10n/app_localizations.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BadgesScreen extends StatelessWidget {
   const BadgesScreen({super.key});
@@ -359,6 +360,85 @@ class BadgesScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        // Badge Points Card
+        if (badge.points != null && badge.points! > 0)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.stars_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.badgeRewardPoints,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '+${badge.points} pts',
+                        style: GoogleFonts.inter(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.trending_up_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (badge.points != null && badge.points! > 0)
+          const SizedBox(height: 12),
         _buildDateRangeCard(startDate, endDate, context),
       ],
     );
@@ -822,10 +902,7 @@ class _BadgeRulesSheet extends StatelessWidget {
             const SizedBox(height: 12),
           ],
           if (rules.scope.productIds.isNotEmpty)
-            _buildScopeItem(
-              l10n.products,
-              l10n.specificProducts(rules.scope.productIds.length),
-            ),
+            _ProductChipsWidget(productIds: rules.scope.productIds),
         ],
       ),
     );
@@ -970,5 +1047,199 @@ class _BadgeRulesSheet extends StatelessWidget {
     } else {
       return value.toStringAsFixed(0);
     }
+  }
+}
+
+// Widget to display product chips with expandable view
+class _ProductChipsWidget extends StatefulWidget {
+  final List<String> productIds;
+
+  const _ProductChipsWidget({required this.productIds});
+
+  @override
+  State<_ProductChipsWidget> createState() => _ProductChipsWidgetState();
+}
+
+class _ProductChipsWidgetState extends State<_ProductChipsWidget> {
+  bool _isExpanded = false;
+  Map<String, String> _productNames = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProductNames();
+  }
+
+  Future<void> _fetchProductNames() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final Map<String, String> names = {};
+
+      // Fetch product names in batches of 10 (Firestore whereIn limit)
+      for (int i = 0; i < widget.productIds.length; i += 10) {
+        final batch = widget.productIds.skip(i).take(10).toList();
+        final snapshot = await firestore
+            .collection('products')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          names[doc.id] = doc.data()['name'] ?? 'Produit ${doc.id}';
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _productNames = names;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_isLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.products,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final displayedProducts = _isExpanded
+        ? widget.productIds
+        : widget.productIds.take(3).toList();
+    final hasMore = widget.productIds.length > 3;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.products,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ...displayedProducts.map((productId) {
+              final productName = _productNames[productId] ?? productId;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade50, Colors.indigo.shade50],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue.shade200, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        productName,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade900,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            if (hasMore)
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.purple.shade50, Colors.pink.shade50],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.purple.shade300, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isExpanded
+                            ? Icons.expand_less_rounded
+                            : Icons.more_horiz_rounded,
+                        size: 18,
+                        color: Colors.purple.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isExpanded
+                            ? l10n.showLess
+                            : '+${widget.productIds.length - 3}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.purple.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }

@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable max-len */
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
 // Initialize the Firebase Admin SDK to interact with Firestore
 admin.initializeApp();
 const db = admin.firestore();
+
+// Export notification functions
+export {onNewTrainingCreated, onNewBadgeCreated, onUserBadgeAwarded} from "./notifications";
 
 /**
  * NEW: Cloud Function to process sales for badge awards.
@@ -20,7 +23,7 @@ export const processSaleForBadgeAwards = onDocumentCreated("sales/{saleId}", asy
   }
 
   const sale = snapshot.data();
-  const { userId, productId, quantity, totalPrice } = sale;
+  const {userId, productId, quantity, totalPrice} = sale;
 
   if (!userId || !productId) {
     logger.error(`Sale document ${event.params.saleId} is missing userId or productId.`);
@@ -99,7 +102,7 @@ export const processSaleForBadgeAwards = onDocumentCreated("sales/{saleId}", asy
           progressValue: newProgress,
           metric: rules.metric,
           lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+        }, {merge: true});
 
         logger.info(`Updated badge progress for user ${userId} on badge ${badgeId}. New progress: ${newProgress}/${rules.targetValue}`);
 
@@ -149,7 +152,7 @@ export const processSaleForBadgeAwards = onDocumentCreated("sales/{saleId}", asy
       }
     }
   } catch (error) {
-    logger.error(`Failed to process sale ${event.params.saleId} for badge awards.`, { error });
+    logger.error(`Failed to process sale ${event.params.saleId} for badge awards.`, {error});
   }
 });
 
@@ -206,8 +209,8 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
   }
 
   const sale = snapshot.data();
-  const { userId, pharmacyId, productId, quantity, totalPrice } = sale;
-  const { saleId } = event.params;
+  const {userId, pharmacyId, productId, quantity, totalPrice} = sale;
+  const {saleId} = event.params;
 
   // Basic validation
   if (!userId) {
@@ -276,13 +279,13 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
         await userProgressRef.set({
           progressValue: newProgress,
           status: "in-progress",
-        }, { merge: true });
+        }, {merge: true});
 
         logger.info(`Updated progress for user ${userId} on goal ${goalId}. New progress: ${newProgress}`);
 
         // Check for goal completion
         if (newProgress >= goal.targetValue) {
-          await userProgressRef.update({ status: "completed" });
+          await userProgressRef.update({status: "completed"});
 
           // Award points to the user
           await db.collection("users").doc(userId).update({
@@ -294,7 +297,7 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
       }
     }
   } catch (error) {
-    logger.error(`Failed to process sale ${saleId} for goal tracking.`, { error });
+    logger.error(`Failed to process sale ${saleId} for goal tracking.`, {error});
   }
 });
 
@@ -308,7 +311,7 @@ export const processSaleForGoalProgress = onDocumentCreated("sales/{saleId}", as
  * @return {boolean} True if the sale is eligible, false otherwise.
  */
 function isSaleEligible(sale: any, goal: any, user: any, pharmacy: any, product: any): boolean {
-  const { criteria } = goal;
+  const {criteria} = goal;
   if (!criteria) return true; // No criteria means eligible for all
 
   // Check product-related criteria
